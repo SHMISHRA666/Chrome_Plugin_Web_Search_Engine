@@ -28,6 +28,13 @@ class WebSearchAgent:
     async def process_page(self, url: str, session) -> bool:
         """Process a webpage and add to index."""
         try:
+            # # Check if URL is already indexed
+            # if hasattr(self.memory, 'data'):
+            #     for item in self.memory.data:
+            #         if item.url == url:
+            #             log("agent", f"URL {url} already indexed, skipping processing.")
+            #             return True
+
             # Extract content
             perception = extract_content(url)
             if not perception.is_indexable:

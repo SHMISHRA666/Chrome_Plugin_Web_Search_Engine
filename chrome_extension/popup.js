@@ -75,8 +75,8 @@ document.addEventListener('DOMContentLoaded', function() {
         resultsDiv.innerHTML = '';
 
         try {
-            // Process current page first
-            await processCurrentPage();
+            // Do NOT process current page here; only send the query
+            // await processCurrentPage();
 
             // Send query to backend
             const response = await fetch(`${API_BASE_URL}/query`, {
@@ -150,6 +150,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-    // Process current page on popup open
-    processCurrentPage();
+    // Remove this line to avoid processing the page on popup open
+    // processCurrentPage();
 }); 

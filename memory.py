@@ -19,7 +19,25 @@ class MemoryManager:
         self.index = None
         self.data: List[MemoryItem] = []
         self.embeddings: List[np.ndarray] = []
-        
+        self._load_data_json()
+
+    def _load_data_json(self):
+        """Load MemoryItem data from data.json and merge with in-memory data."""
+        data_file = os.path.join(self.index_path, "data.json")
+        if os.path.exists(data_file):
+            try:
+                with open(data_file, 'r') as f:
+                    loaded = json.load(f)
+                # Avoid duplicates by URL
+                existing_urls = {item.url for item in self.data}
+                for item_dict in loaded:
+                    if item_dict.get('url') not in existing_urls:
+                        try:
+                            self.data.append(MemoryItem(**item_dict))
+                        except Exception:
+                            pass
+            except Exception as e:
+                print(f"[MemoryManager] Failed to load data.json: {e}")
 
     def _get_embedding(self, text: str) -> np.ndarray:
         """Get embedding for text using Nomic."""
@@ -47,8 +65,10 @@ class MemoryManager:
         self.index.add(np.stack([emb]))
 
     def search(self, query: SearchQuery) -> SearchResponse:
-        """Search for content in indexed pages."""
-        if not self.index or len(self.data) == 0:
+        """Search for content in indexed pages (using both loaded and in-memory data)."""
+        # Use all data (from data.json and in-memory)
+        all_data = self.data
+        if not self.index or len(all_data) == 0:
             return SearchResponse(results=[], total_matches=0)
 
         query_vec = self._get_embedding(query.query).reshape(1, -1)
@@ -56,15 +76,12 @@ class MemoryManager:
 
         results = []
         for score, idx in zip(D[0], I[0]):
-            if idx >= len(self.data):
+            if idx >= len(all_data):
                 continue
-                
-            item = self.data[idx]
+            item = all_data[idx]
             content = item.content
-            
             # Find the best matching text segment with context
             highlight_start, highlight_end = self._find_best_match(content, query.query)
-            
             results.append(SearchResult(
                 url=item.url,
                 title=item.title,
@@ -73,7 +90,6 @@ class MemoryManager:
                 highlight_start=highlight_start,
                 highlight_end=highlight_end
             ))
-
         return SearchResponse(
             results=results,
             total_matches=len(results)
