@@ -45,18 +45,26 @@ class WebSearchAgent:
             
             save_to_index(content,self.index_path)
 
+            # Extract content if not already done
+            if not content.title or not content.content:
+                perception = extract_content(content.url)
+                content.title = perception.title
+                content.content = perception.content
+
             try:
-                # Call process_webpage_tool with proper model conversion
+                # Now call the tool with all required fields
                 print("Calling MCP tool process_webpage_tool")
                 result = await session.call_tool(
-                    "process_webpage",
-                    arguments={                                        
+                    "process_webpage_tool",
+                    arguments={
+                        "data": {
                             "url": content.url,
                             "title": content.title,
                             "content": content.content
+                        }
                     }
                 )
-                print(result)
+                # print(result)
                 if not result:
                     log("agent", f"Failed to process {url} with MCP tool - no result returned")
                     return False

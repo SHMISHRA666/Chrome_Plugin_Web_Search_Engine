@@ -9,7 +9,15 @@ import math
 import numpy as np
 from pathlib import Path
 import requests
-from models import AddInput, AddOutput, SqrtInput, SqrtOutput, StringsToIntsInput, StringsToIntsOutput, ExpSumInput, ExpSumOutput
+from models import \
+AddInput, AddOutput, SqrtInput, SqrtOutput, StringsToIntsInput, \
+StringsToIntsOutput, ExpSumInput, ExpSumOutput, \
+FibonacciInput, FibonacciOutput, RemainderInput, \
+RemainderOutput, SinInput, SinOutput, CosInput, CosOutput, \
+TanInput, TanOutput, MineInput, MineOutput, SubtractInput, \
+SubtractOutput, MultiplyInput, MultiplyOutput, DivideInput, \
+DivideOutput, PowerInput, PowerOutput, CubeRootInput, CubeRootOutput, \
+FactorialInput, FactorialOutput, LogInput, LogOutput
 from markitdown import MarkItDown
 import time
 from tqdm import tqdm
@@ -94,6 +102,7 @@ def search_pages(query: str) -> list[str]:
 
 @mcp.tool()
 def add(input: AddInput) -> AddOutput:
+    """Add two numbers"""
     print("CALLED: add(AddInput) -> AddOutput")
     return AddOutput(result=input.a + input.b)
 
@@ -105,53 +114,53 @@ def sqrt(input: SqrtInput) -> SqrtOutput:
 
 # subtraction tool
 @mcp.tool()
-def subtract(a: int, b: int) -> int:
+def subtract(input: SubtractInput) -> SubtractOutput:
     """Subtract two numbers"""
-    print("CALLED: subtract(a: int, b: int) -> int:")
-    return int(a - b)
+    print("CALLED: subtract(SubtractInput) -> SubtractOutput")
+    return SubtractOutput(result=input.a - input.b)
 
 # multiplication tool
 @mcp.tool()
-def multiply(a: int, b: int) -> int:
+def multiply(input: MultiplyInput) -> MultiplyOutput:
     """Multiply two numbers"""
-    print("CALLED: multiply(a: int, b: int) -> int:")
-    return int(a * b)
+    print("CALLED: multiply(MultiplyInput) -> MultiplyOutput")
+    return MultiplyOutput(result=input.a * input.b)
 
 #  division tool
 @mcp.tool() 
-def divide(a: int, b: int) -> float:
+def divide(input: DivideInput) -> DivideOutput:
     """Divide two numbers"""
-    print("CALLED: divide(a: int, b: int) -> float:")
-    return float(a / b)
+    print("CALLED: divide(DivideInput) -> DivideOutput")
+    return DivideOutput(result=input.a / input.b)
 
 # power tool
 @mcp.tool()
-def power(a: int, b: int) -> int:
+def power(input: PowerInput) -> PowerOutput:
     """Power of two numbers"""
-    print("CALLED: power(a: int, b: int) -> int:")
-    return int(a ** b)
+    print("CALLED: power(PowerInput) -> PowerOutput")
+    return PowerOutput(result=input.a ** input.b)
 
 
 # cube root tool
 @mcp.tool()
-def cbrt(a: int) -> float:
+def cbrt(input: CubeRootInput) -> CubeRootOutput:
     """Cube root of a number"""
-    print("CALLED: cbrt(a: int) -> float:")
-    return float(a ** (1/3))
+    print("CALLED: cbrt(CubeRootInput) -> CubeRootOutput")
+    return CubeRootOutput(result=input.a ** (1/3))
 
 # factorial tool
 @mcp.tool()
-def factorial(a: int) -> int:
+def factorial(input: FactorialInput) -> FactorialOutput:
     """factorial of a number"""
-    print("CALLED: factorial(a: int) -> int:")
-    return int(math.factorial(a))
+    print("CALLED: factorial(FactorialInput) -> FactorialOutput")
+    return FactorialOutput(result=math.factorial(input.a))
 
 # log tool
 @mcp.tool()
-def log(a: int) -> float:
+def log(input: LogInput) -> LogOutput:
     """log of a number"""
-    print("CALLED: log(a: int) -> float:")
-    return float(math.log(a))
+    print("CALLED: log(LogInput) -> LogOutput")
+    return LogOutput(result=math.log(input.a))
 
 @mcp.tool()
 def strings_to_chars_to_int(input: StringsToIntsInput) -> StringsToIntsOutput:
@@ -168,50 +177,50 @@ def int_list_to_exponential_sum(input: ExpSumInput) -> ExpSumOutput:
     return ExpSumOutput(result=result)
 
 @mcp.tool()
-def fibonacci_numbers(n: int) -> list:
+def fibonacci_numbers(input: FibonacciInput) -> FibonacciOutput:
     """Return the first n Fibonacci Numbers"""
-    print("CALLED: fibonacci_numbers(n: int) -> list:")
-    if n <= 0:
+    print("CALLED: fibonacci_numbers(FibonacciInput) -> FibonacciOutput")
+    if input.n <= 0:
         return []
     fib_sequence = [0, 1]
-    for _ in range(2, n):
+    for _ in range(2, input.n):
         fib_sequence.append(fib_sequence[-1] + fib_sequence[-2])
-    return fib_sequence[:n]
+    return FibonacciOutput(result=fib_sequence[:input.n])
 
 # remainder tool
 @mcp.tool()
-def remainder(a: int, b: int) -> int:
+def remainder(input: RemainderInput) -> RemainderOutput:
     """remainder of two numbers divison"""
-    print("CALLED: remainder(a: int, b: int) -> int:")
-    return int(a % b)
+    print("CALLED: remainder(RemainderInput) -> RemainderOutput")
+    return RemainderOutput(result=input.a % input.b)
 
 # sin tool
 @mcp.tool()
-def sin(a: int) -> float:
+def sin(input: SinInput) -> SinOutput:
     """sin of a number"""
-    print("CALLED: sin(a: int) -> float:")
-    return float(math.sin(a))
+    print("CALLED: sin(SinInput) -> SinOutput")
+    return SinOutput(result=math.sin(input.a))
 
 # cos tool
 @mcp.tool()
-def cos(a: int) -> float:
+def cos(input: CosInput) -> CosOutput:
     """cos of a number"""
-    print("CALLED: cos(a: int) -> float:")
-    return float(math.cos(a))
+    print("CALLED: cos(CosInput) -> CosOutput")
+    return CosOutput(result=math.cos(input.a))
 
 # tan tool
 @mcp.tool()
-def tan(a: int) -> float:
+def tan(input: TanInput) -> TanOutput:
     """tan of a number"""
-    print("CALLED: tan(a: int) -> float:")
-    return float(math.tan(a))
+    print("CALLED: tan(TanInput) -> TanOutput")
+    return TanOutput(result=math.tan(input.a))
 
 # mine tool
 @mcp.tool()
-def mine(a: int, b: int) -> int:
+def mine(input: MineInput) -> MineOutput:
     """special mining tool"""
-    print("CALLED: mine(a: int, b: int) -> int:")
-    return int(a - b - b)
+    print("CALLED: mine(MineInput) -> MineOutput")
+    return MineOutput(result=input.a - input.b - input.b)
 
 class WebpageData(BaseModel):
     url: str

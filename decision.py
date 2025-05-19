@@ -51,12 +51,28 @@ Guidelines:
 - Use NO_TOOL_NEEDED when you have the final answer and no more tools are needed
   Example: For "what is 2+2?", after getting result 4, respond with:
   NO_TOOL_NEEDED: The sum of 2 and 2 is 4
+  Example: For "what is 35-28?", after getting result 7 from the subtract tool, respond with:
+  NO_TOOL_NEEDED: The result of 35 minus 28 is 7
+  Example: For "what is the log of 100?", after getting result 4.605 from the log tool, respond with:
+  NO_TOOL_NEEDED: The natural logarithm (ln) of 100 is approximately 4.605.
+  Example: For "what is the sine of 90?", after getting result 0.893 from the sin tool, respond with:
+  NO_TOOL_NEEDED: The sine of 90 (in radians) is approximately 0.893.
+  Example: For "what is the cosine of 90?", after getting result -0.448 from the cos tool, respond with:
+  NO_TOOL_NEEDED: The cosine of 90 (in radians) is approximately -0.448.
+  Example: For "what is the tangent of 90?", after getting result 1.995 from the tan tool, respond with:
+  NO_TOOL_NEEDED: The tangent of 90 (in radians) is approximately 1.995.
+- If you have just received a result from a math tool (add, subtract, multiply, divide, log, \
+sqrt, cbrt, factorial, sin, cos, tan, mine, power, strings_to_chars_to_int, 
+int_list_to_exponential_sum, fibonacci_numbers, remainder), \
+always respond with NO_TOOL_NEEDED and the final answer, not another tool call or search. \
+For trigonometric functions (sin, cos, tan), always output the final answer after the tool result.
 - Use RELEVANT_CONTEXT_FOUND when you need to search for more information
   Example: For "find information about AI", respond with:
   RELEVANT_CONTEXT_FOUND: [search results about AI]
 - Respond using EXACTLY ONE of the formats above per step
 - Do NOT include extra text, explanation, or formatting
 - Use nested keys (e.g., input.string) and square brackets for lists
+- For math functions, use the input.key format always and not use any other format
 - You can reference these relevant memories:
 {memory_texts}
 
@@ -78,6 +94,11 @@ Input Summary:
   - [receives a detailed content] - RELEVANT_CONTEXT_FOUND: [Context 1, Context 2, ...]
   - NO_TOOL_NEEDED: [This is a simple factual question that can be answered directly]
 
+✅ Examples:
+- For "what is the square root of 4?", respond with:
+  FUNCTION_CALL: sqrt|input.a=4
+- For "what is the cube root of 8?", respond with:
+  FUNCTION_CALL: cbrt|input.a=8
 
 IMPORTANT:
 - 🚫 Do NOT invent tools. Use only the tools listed below.
@@ -94,6 +115,14 @@ RELEVANT_CONTEXT_FOUND: [Context 1, Context 2, ...]
 - 💥 If unsure or no tool fits, skip to RELEVANT_CONTEXT_FOUND: [unknown]
 - ✅ You have only 3 attempts. Final attempt must be RELEVANT_CONTEXT_FOUND]
 - 💥 If unsure or no tool fits, respond with NO_TOOL_NEEDED
+
+For log, the tool only supports natural logarithm (ln). If the user asks for log base 10, call the tool with input.a, and then respond with NO_TOOL_NEEDED explaining that only natural log is supported and show the result.
+Example: For "what is the log base 10 of 100?", respond with:
+NO_TOOL_NEEDED: The tool only supports natural logarithm (ln). ln(100) ≈ 4.605. For log base 10, please use a calculator or another tool.
+
+- If the user asks a factual question and the search tool returns "No indexed content available for search.", answer the question directly using your own knowledge and respond with NO_TOOL_NEEDED: [final answer]. Do not call the search tool again.
+  Example: For "What is the capital of Australia?", if the search tool returns "No indexed content available for search.", respond with:
+  NO_TOOL_NEEDED: The capital of Australia is Canberra.
 """
     
     try:
