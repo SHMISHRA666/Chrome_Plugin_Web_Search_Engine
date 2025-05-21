@@ -264,48 +264,52 @@ def process_webpage(url: str, content: str, title: str) -> bool:
         # Process webpage content
         mcp_log("PROC", f"Processing: {url}")
         try:
-            # Convert content to markdown if needed
-            # converter = MarkItDown()
-            # result = converter.convert(str(content))
-            # markdown = result.text_content
             chunks = list(chunk_text(content))
             embeddings_for_page = []
             new_metadata = []
 
             # Generate embeddings for each chunk
             for i, chunk in enumerate(tqdm(chunks, desc=f"Embedding {url}")):
+                chunk_id = f"{url}_{i}"
+                
+                # Skip if chunk_id already exists in metadata
+                if any(item.get('chunk_id') == chunk_id for item in metadata):
+                    mcp_log("SKIP", f"Chunk {chunk_id} already exists in metadata")
+                    continue
+                    
                 embedding = get_embedding(chunk)
                 embeddings_for_page.append(embedding)
                 new_metadata.append({
                     "url": url,
                     "title": title,
                     "chunk": chunk,
-                    "chunk_id": f"{url}_{i}",
-                        "timestamp": datetime.now().isoformat()
-                    })
+                    "chunk_id": chunk_id,
+                    "timestamp": datetime.now().isoformat()
+                })
 
-                # Update index and metadata
-                if embeddings_for_page:
-                    if index is None:
-                        dim = len(embeddings_for_page[0])
-                        index = faiss.IndexFlatL2(dim)
-                    index.add(np.stack(embeddings_for_page))
-                    metadata.extend(new_metadata)
-                    CACHE_META[url] = content_hash_value
+            # Only update if we have new chunks
+            if embeddings_for_page:
+                if index is None:
+                    dim = len(embeddings_for_page[0])
+                    index = faiss.IndexFlatL2(dim)
+                index.add(np.stack(embeddings_for_page))
+                metadata.extend(new_metadata)
+                CACHE_META[url] = content_hash_value
+                
+                # Save updated index and metadata
+                CACHE_FILE.write_text(json.dumps(CACHE_META, indent=2))
+                METADATA_FILE.write_text(json.dumps(metadata, indent=2))
+                if index and index.ntotal > 0:
+                    faiss.write_index(index, str(INDEX_FILE))
+                    mcp_log("SUCCESS", f"Saved FAISS index and metadata for {url}")
+                    return True
+            else:
+                mcp_log("WARN", f"No new chunks to process for {url}")
+                return True
+
         except Exception as e:
             mcp_log("ERROR", f"Failed to process {url}: {e}")
             return False
-
-        # Save updated index and metadata
-        CACHE_FILE.write_text(json.dumps(CACHE_META, indent=2))
-        METADATA_FILE.write_text(json.dumps(metadata, indent=2))
-        if index and index.ntotal > 0:
-            faiss.write_index(index, str(INDEX_FILE))
-            mcp_log("SUCCESS", f"Saved FAISS index and metadata for {url}")
-            return True
-
-        mcp_log("WARN", f"No content to process for {url}")
-        return False
 
     except Exception as e:
         mcp_log("ERROR", f"Failed to process {url}: {e}")

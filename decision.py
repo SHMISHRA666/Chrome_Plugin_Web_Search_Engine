@@ -189,6 +189,7 @@ Guidelines for final answer:
 - Include key facts and relationships
 - If results are irrelevant, state that clearly
 - If results are conflicting, acknowledge the conflict
+- If no clear answer exists, say so explicitly
 
 Output only the results and final answer, one per line.
 """
