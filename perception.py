@@ -84,6 +84,26 @@ def extract_content(url: str) -> PerceptionResult:
             
         # Get title
         title = soup.title.string if soup.title else ""
+
+        # Remove all links (<a> tags) but keep text
+        for a_tag in soup.find_all("a"):
+            a_tag.unwrap()
+
+        # Remove typical ad-related or promotional sections
+        ad_classes = ["advertisement", "sponsored", "ad-container", "adblock", "ads", "sponsor"]
+        for cls in ad_classes:
+            for tag in soup.find_all(class_=cls):
+                tag.decompose()
+
+        # Remove all <footer> tags
+        for footer in soup.find_all("footer"):
+            footer.decompose()
+
+        # Remove common footer-like class names
+        footer_like_classes = ["footer", "site-footer", "page-footer", "bottom-bar"]
+        for cls in footer_like_classes:
+            for tag in soup.find_all(class_=cls):
+                tag.decompose()
         
         # Get text content
         text = soup.get_text(separator=' ', strip=True)

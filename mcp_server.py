@@ -87,7 +87,8 @@ def search_pages(query: str) -> list[str]:
                 
             # Add context around the match
             chunk = data['chunk']
-            preview = chunk[:200] + "..." if len(chunk) > 200 else chunk
+            # preview = chunk[:200] + "..." if len(chunk) > 200 else chunk
+            preview = chunk
             
             results.append(f"{preview}\n[Source: {data['url']}, Title: {data['title']}, Score: {score:.2f}]")
                 
@@ -229,7 +230,7 @@ class WebpageData(BaseModel):
 
     # class Config:
     #     from_attributes = True
-@mcp.tool()
+
 def process_webpage(url: str, content: str, title: str) -> bool:
     """Process webpage content and update FAISS index."""
     mcp_log("INFO", f"Processing webpage: {url}")
@@ -259,10 +260,10 @@ def process_webpage(url: str, content: str, title: str) -> bool:
         mcp_log("PROC", f"Processing: {url}")
         try:
             # Convert content to markdown if needed
-            converter = MarkItDown()
-            result = converter.convert(str(content))
-            markdown = result.text_content
-            chunks = list(chunk_text(markdown))
+            # converter = MarkItDown()
+            # result = converter.convert(str(content))
+            # markdown = result.text_content
+            chunks = list(chunk_text(content))
             embeddings_for_page = []
             new_metadata = []
 
