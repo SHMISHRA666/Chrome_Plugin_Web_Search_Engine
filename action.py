@@ -324,7 +324,6 @@ async def process_query(query: str, session: ClientSession, tools_obj) -> dict:
 
         # Extract the tools list from the ToolsList object
         tools = tools_obj.tools if hasattr(tools_obj, 'tools') else []
-        # print("Available tools:", [tool.name for tool in tools])
 
         while step < max_steps and not context_found:
             log("loop", f"Step {step + 1} started")
@@ -343,7 +342,6 @@ async def process_query(query: str, session: ClientSession, tools_obj) -> dict:
                 f"- {tool.name}: {getattr(tool, 'description', 'No description')}" 
                 for tool in tools
             )
-            # print("Tool descriptions:", tool_descriptions_text)
 
             # Generate plan
             plan = generate_plan(perception, retrieved.results, tool_descriptions=tool_descriptions_text)

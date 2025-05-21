@@ -249,6 +249,11 @@ def process_webpage(url: str, content: str, title: str) -> bool:
         CACHE_META = json.loads(CACHE_FILE.read_text()) if CACHE_FILE.exists() else {}
         metadata = json.loads(METADATA_FILE.read_text()) if METADATA_FILE.exists() else []
         index = faiss.read_index(str(INDEX_FILE)) if INDEX_FILE.exists() else None
+            
+        # Check if URL exists in metadata
+        if any(item.get('url') == url for item in metadata):
+            mcp_log("SKIP", f"URL already exists in metadata: {url}")
+            return True
 
         # Check if webpage content has changed
         content_hash_value = content_hash(content)
