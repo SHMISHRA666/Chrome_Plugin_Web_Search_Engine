@@ -75,11 +75,8 @@ document.addEventListener('DOMContentLoaded', function() {
         resultsDiv.innerHTML = '';
 
         try {
-            // Do NOT process current page here; only send the query
-            // await processCurrentPage();
-
-            // Send query to backend
-            const response = await fetch(`${API_BASE_URL}/query`, {
+            // Send query to backend using the /process endpoint
+            const response = await fetch(`${API_BASE_URL}/process`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

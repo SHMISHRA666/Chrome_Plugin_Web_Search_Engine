@@ -2,10 +2,14 @@ from typing import Dict, Any, Union
 from pydantic import BaseModel
 import json
 import os
-from models import MemoryItem, SearchResponse
+from models import MemoryItem, SearchResponse, SearchQuery
 from typing import Optional
 import ast
 from mcp import ClientSession
+from perception import extract_content, extract_perception
+from decision import generate_plan, process_search_query
+from memory import MemoryManager
+import time
 
 # Optional: import log from agent if shared, else define locally
 try:
@@ -242,4 +246,162 @@ def format_search_results(results: SearchResponse) -> ActionResult:
         return ActionResult(
             success=False,
             message=str(e)
-        ) 
+        )
+
+async def process_page(url: str, session: ClientSession) -> bool:
+    """Process a webpage and add to index."""
+    try:
+        # Extract content
+        index_path="faiss_index"
+        memory = MemoryManager(index_path=index_path)
+        perception = extract_content(url)
+        if not perception.is_indexable:
+            log("agent", f"Skipping {url}: {perception.skip_reason}")
+            return False
+            
+        # Create webpage content
+        content = MemoryItem(
+            url=url,
+            title=perception.title,
+            content=perception.content,
+            type="fact",
+            session_id=f"session-{int(time.time())}"
+        )
+        
+        save_to_index(content,index_path)
+
+        # Extract content if not already done
+        if not content.title or not content.content:
+            perception = extract_content(content.url)
+            content.title = perception.title
+            content.content = perception.content
+
+        try:
+            # Now call the tool with all required fields
+            print("Calling MCP tool process_webpage_tool")
+            result = await session.call_tool(
+                "process_webpage_tool",
+                arguments={
+                    "data": {
+                        "url": content.url,
+                        "title": content.title,
+                        "content": content.content
+                    }
+                }
+            )
+            if not result:
+                log("agent", f"Failed to process {url} with MCP tool - no result returned")
+                return False
+            
+        except Exception as tool_error:
+            log("agent", f"Tool execution failed for {url}: {str(tool_error)}")
+            import traceback
+            log("agent", f"Tool error traceback: {traceback.format_exc()}")
+            return False
+        
+        # Add to memory
+        memory.add(content)
+        log("agent", f"Processed {url}")
+        return True
+
+    except Exception as e:
+        log("agent", f"Failed to process {url}: {str(e)}")
+        import traceback
+        log("agent", f"Error traceback: {traceback.format_exc()}")
+        return False
+
+async def process_query(query: str, session: ClientSession, tools_obj) -> dict:
+    """Process a user query through the agent loop."""
+    try:
+        step = 0
+        original_query = query
+        context_found = False
+        final_answer = None
+        session_id = f"session-{int(time.time())}"
+        index_path = "faiss_index"
+        memory = MemoryManager(index_path=index_path)
+        max_steps = 3
+
+        # Extract the tools list from the ToolsList object
+        tools = tools_obj.tools if hasattr(tools_obj, 'tools') else []
+        # print("Available tools:", [tool.name for tool in tools])
+
+        while step < max_steps and not context_found:
+            log("loop", f"Step {step + 1} started")
+
+            # Extract perception
+            perception = extract_perception(query)
+            log("perception", f"Intent: {perception.intent}, Tool hint: {perception.tool_hint}")
+
+            # Create search query object
+            search_query = SearchQuery(query=query, top_k=3, session_filter=session_id)
+            retrieved = memory.search(search_query)
+            log("memory", f"Retrieved {len(retrieved.results)} relevant memories")
+
+            # Get tool descriptions from the tools list
+            tool_descriptions_text = "\n".join(
+                f"- {tool.name}: {getattr(tool, 'description', 'No description')}" 
+                for tool in tools
+            )
+            # print("Tool descriptions:", tool_descriptions_text)
+
+            # Generate plan
+            plan = generate_plan(perception, retrieved.results, tool_descriptions=tool_descriptions_text)
+            log("plan", f"Plan generated: {plan}")
+
+            if plan.startswith("NO_TOOL_NEEDED:"):
+                context_found = True
+                final_answer = plan.replace("NO_TOOL_NEEDED:", "").strip()
+                break
+
+            if plan.startswith("RELEVANT_CONTEXT_FOUND:"):
+                context_found = True
+                search_results = process_search_query(original_query, memory, top_k=5, plan_result=plan)
+                final_answer = search_results.final_answer
+                break
+
+            try:
+                # Execute tool
+                result = await execute_tool(session, tools, plan)
+                log("tool", f"{result.tool_name} returned: {result.result}")
+
+                # Add to memory with proper fields
+                memory_item = MemoryItem(
+                    text=str(result.result),
+                    type="tool_output",
+                    tool_name=result.tool_name,
+                    user_query=original_query,
+                    tags=[result.tool_name],
+                    session_id=session_id,
+                    url="",  # Required field
+                    title="",  # Required field
+                    content=str(result.result)  # Required field
+                )
+                memory.add(memory_item)
+
+                # Update query for next iteration
+                query = f"Original task: {original_query}\nPrevious output: {result.result}\nWhat should I do next?"
+
+            except Exception as e:
+                log("error", f"Tool execution failed: {e}")
+                break
+
+            step += 1
+
+        # If no final answer yet, process search results
+        if not final_answer:
+            search_results = process_search_query(original_query, memory, top_k=5, plan_result=plan)
+            final_answer = search_results.final_answer
+
+        return {
+            "success": True,
+            "answer": final_answer,
+            "search_results": search_results.model_dump() if 'search_results' in locals() else None
+        }
+
+    except Exception as e:
+        log("error", f"Query processing failed: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }

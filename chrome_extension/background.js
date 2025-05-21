@@ -74,7 +74,7 @@ async function processCurrentTab() {
 // Handle messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'search') {
-        fetch('http://localhost:5000/search', {
+        fetch('http://localhost:5000/process', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: request.query })
