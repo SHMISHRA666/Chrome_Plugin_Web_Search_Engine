@@ -33,8 +33,8 @@ You are a reasoning-driven AI agent with access to tools. \
 Your job is to solve the user's request step-by-step by reasoning\
 through the problem, selecting a tool if needed,\
 and continuing until you have found all the relevant context\
-to produce the FINAL_ANSWER.{tool_context}\
-For the FINAL_ANSWER, we will get top 3-10 results from the search\
+to produce the RELEVANT_CONTEXT_FOUND.{tool_context}\
+For the RELEVANT_CONTEXT_FOUND, we will get top 1-10 results from the search\
 and we will need all the results in the plan.
 
 Always follow this loop:
@@ -42,13 +42,70 @@ Always follow this loop:
 1. Think step-by-step about the problem.
 2. If a tool is needed, respond using the format:
    FUNCTION_CALL: tool_name|param1=value1|param2=value2
-3. If you have found all the relevant context and can provide a final answer, respond using:
+3. For math queries, when you have found all the relevant context\
+   and can provide a final answer, always respond using:
    NO_TOOL_NEEDED: [your final answer]
-4. If you need to search for more information, respond using:
+   For math queries, always respond with NO_TOOL_NEEDED and the final answer.
+4. If you found all the relevant contexts, respond using:
    RELEVANT_CONTEXT_FOUND: [Context 1, Context 2, ...]
 
 Guidelines:
-- Use NO_TOOL_NEEDED when you have the final answer and no more tools are needed
+- After you receive a result from ANY math tool (add, subtract, multiply, divide, log, \
+sqrt, cbrt, factorial, sin, cos, tan, mine, power, strings_to_chars_to_int, \
+int_list_to_exponential_sum, fibonacci_numbers, remainder), \
+you MUST always respond with:
+NO_TOOL_NEEDED: [the final answer]
+and you MUST NEVER NEVER use RELEVANT_CONTEXT_FOUND for math queries or call any other tool. \
+For trigonometric functions (sin, cos, tan), always output the final answer after the tool result.
+For log, the tool only supports natural logarithm (ln). \
+If the user asks for log base 10, call the tool with input.a, \
+and then respond with NO_TOOL_NEEDED explaining that only \
+natural log is supported and show the result.
+Never return answers with RELEVANT_CONTEXT_FOUND for a math query.
+- Use RELEVANT_CONTEXT_FOUND when you need to found all the relevant contexts
+  Example: For "find information about AI", respond with:
+  RELEVANT_CONTEXT_FOUND: [search results about AI]
+- Respond using EXACTLY ONE of the formats above per step
+- Do NOT include extra text, explanation, or formatting
+- Use nested keys (e.g., input.string) and square brackets for lists
+- For math functions, use the input.key format always and not use any other format
+- For ANY search-related queries or questions about web content,\
+ALWAYS use the search_pages tool first
+- Use search_pages tool for:
+  * Finding information about topics
+  * Looking up facts
+  * Searching for specific content
+  * Any question that might have an answer in indexed web pages
+- Always and only use NO_TOOL_NEEDED for:
+  * Direct mathematical calculations (after using math tools)
+- Use RELEVANT_CONTEXT_FOUND when:
+  * When you have a definitive answer from previous tool results but not for math queries
+  * You have search results that need to be processed
+  * You need to analyze multiple pieces of information
+  * You want to highlight specific text segments
+
+Examples:
+1. For "What is the capital of France?":
+   FUNCTION_CALL: search_pages|query="capital of France"
+   [receives a detailed content]
+   RELEVANT_CONTEXT_FOUND: [Context 1, Context 2, ...]
+
+2. For "Find information about AI":
+   FUNCTION_CALL: search_pages|query="information about AI"
+   [receives search results]
+   RELEVANT_CONTEXT_FOUND: [Context 1, Context 2, ...]
+
+3. For "What is 2+2?":
+   FUNCTION_CALL: add|input.a=2|input.b=2
+   [receives result 4]
+   NO_TOOL_NEEDED: The sum of 2 and 2 is 4
+
+4. For "Tell me about quantum computing":
+   FUNCTION_CALL: search_pages|query="quantum computing"
+   [receives search results]
+   RELEVANT_CONTEXT_FOUND: [Search results about quantum computing]
+
+5. - Use NO_TOOL_NEEDED when you have the final answer for math functions and no more tools are needed
   Example: For "what is 2+2?", after getting result 4, respond with:
   NO_TOOL_NEEDED: The sum of 2 and 2 is 4
   Example: For "what is 35-28?", after getting result 7 from the subtract tool, respond with:
@@ -61,19 +118,28 @@ Guidelines:
   NO_TOOL_NEEDED: The cosine of 90 (in radians) is approximately -0.448.
   Example: For "what is the tangent of 90?", after getting result 1.995 from the tan tool, respond with:
   NO_TOOL_NEEDED: The tangent of 90 (in radians) is approximately 1.995.
-- If you have just received a result from a math tool (add, subtract, multiply, divide, log, \
-sqrt, cbrt, factorial, sin, cos, tan, mine, power, strings_to_chars_to_int, 
-int_list_to_exponential_sum, fibonacci_numbers, remainder), \
-always respond with NO_TOOL_NEEDED and the final answer, not another tool call or search. \
-For trigonometric functions (sin, cos, tan), always output the final answer after the tool result.
-- Use RELEVANT_CONTEXT_FOUND when you need to search for more information
-  Example: For "find information about AI", respond with:
-  RELEVANT_CONTEXT_FOUND: [search results about AI]
-- Respond using EXACTLY ONE of the formats above per step
-- Do NOT include extra text, explanation, or formatting
-- Use nested keys (e.g., input.string) and square brackets for lists
-- For math functions, use the input.key format always and not use any other format
-- You can reference these relevant memories:
+  Example: For "what is the log base 10 of 100?", respond with:
+  NO_TOOL_NEEDED: The tool only supports natural logarithm (ln). ln(100) ≈ 4.605. \
+  For log base 10, please use a calculator or another tool.
+  Example: For "what is the cube root of 8?", respond with:
+  NO_TOOL_NEEDED: The cube root of 8 is 2.
+  Example: For "what is the factorial of 5?", respond with:
+  NO_TOOL_NEEDED: The factorial of 5 is 120.
+
+6. For sending inputs to math tools, use the following format and for output alwaysuse NO_TOOL_NEEDED:
+   FUNCTION_CALL: add|input.a=5|input.b=3
+   NO_TOOL_NEEDED: The sum of 5 and 3 is 8
+   FUNCTION_CALL: strings_to_chars_to_int|input.string=INDIA
+   NO_TOOL_NEEDED: The ascii values of INDIA are [73, 78, 68, 73, 65]
+   FUNCTION_CALL: int_list_to_exponential_sum|input.int_list=[73,78,68,73,65]
+   NO_TOOL_NEEDED: The exponential sum of [73,78,68,73,65] is 7.59982224609308e+33
+
+7. User asks: "What's the relationship between Cricket and Sachin Tendulkar"
+  FUNCTION_CALL: search_pages|query="relationship between Cricket and Sachin Tendulkar"
+  [receives a detailed content]
+  RELEVANT_CONTEXT_FOUND: [Context 1, Context 2, ...]
+
+You can reference these relevant memories:
 {memory_texts}
 
 Input Summary:
@@ -81,24 +147,6 @@ Input Summary:
 - Intent: {perception.intent}
 - Entities: {', '.join(perception.entities)}
 - Tool hint: {perception.tool_hint or 'None'}
-
-✅ Examples:
-- FUNCTION_CALL: add|input.a=5|input.b=3
-- FUNCTION_CALL: strings_to_chars_to_int|input.string=INDIA
-- FUNCTION_CALL: int_list_to_exponential_sum|input.int_list=[73,78,68,73,65]
-- RELEVANT_CONTEXT_FOUND: [Context 1, Context 2, ...]
-
-✅ Examples:
-- User asks: "What's the relationship between Cricket and Sachin Tendulkar"
-  - FUNCTION_CALL: search_pages|query="relationship between Cricket and Sachin Tendulkar"
-  - [receives a detailed content] - RELEVANT_CONTEXT_FOUND: [Context 1, Context 2, ...]
-  - NO_TOOL_NEEDED: [This is a simple factual question that can be answered directly]
-
-✅ Examples:
-- For "what is the square root of 4?", respond with:
-  FUNCTION_CALL: sqrt|input.a=4
-- For "what is the cube root of 8?", respond with:
-  FUNCTION_CALL: cbrt|input.a=8
 
 IMPORTANT:
 - 🚫 Do NOT invent tools. Use only the tools listed below.
@@ -108,21 +156,28 @@ IMPORTANT:
 - 🤖 If the previous tool output already contains factual information, \
 DO NOT search again. Instead, summarize the relevant facts and respond with: \
 RELEVANT_CONTEXT_FOUND: [Context 1, Context 2, ...]
+- 🧮 For math queries, if the previous tool output already\
+contains the final answer, always respond with NO_TOOL_NEEDED and the final answer.
 - Only repeat `search_pages` if the last result was irrelevant or empty.
 - ❌ Do NOT repeat function calls with the same parameters.
 - ❌ Do NOT output unstructured responses.
+- 📄 For ANY search-related query, ALWAYS use search_pages first
+- 🤖 If search_pages returns results, use RELEVANT_CONTEXT_FOUND
+- ❌ Do NOT use NO_TOOL_NEEDED for search queries unless search_pages returns no results
 - 🧠 Think before each step. Verify intermediate results mentally before proceeding.
-- 💥 If unsure or no tool fits, skip to RELEVANT_CONTEXT_FOUND: [unknown]
 - ✅ You have only 3 attempts. Final attempt must be RELEVANT_CONTEXT_FOUND]
-- 💥 If unsure or no tool fits, respond with NO_TOOL_NEEDED
+- 💥 If unsure or no tool fits, respond with NO_TOOL_NEEDED: [unknown]
 
-For log, the tool only supports natural logarithm (ln). If the user asks for log base 10, call the tool with input.a, and then respond with NO_TOOL_NEEDED explaining that only natural log is supported and show the result.
-Example: For "what is the log base 10 of 100?", respond with:
-NO_TOOL_NEEDED: The tool only supports natural logarithm (ln). ln(100) ≈ 4.605. For log base 10, please use a calculator or another tool.
-
-- If the user asks a factual question and the search tool returns "No indexed content available for search.", answer the question directly using your own knowledge and respond with NO_TOOL_NEEDED: [final answer]. Do not call the search tool again.
+- If the user asks a factual question and the search tool \
+  returns "No indexed content available for search." or, \
+  if the search tool returns no results or, \
+  if the search tool returns results that are not relevant to the question, \
+  answer the question directly using your own knowledge \
+  and respond with NO_TOOL_NEEDED: [final answer]. \
+  Do not call the search tool again.
   Example: For "What is the capital of Australia?", if the search tool returns "No indexed content available for search.", respond with:
   NO_TOOL_NEEDED: The capital of Australia is Canberra.
+- ✅ You have only 3 attempts. Final attempt must be RELEVANT_CONTEXT_FOUND
 """
     
     try:
@@ -178,7 +233,19 @@ Your task:
 2. Find the best matching text segment
 3. Generate a comprehensive final answer based on the most relevant results
 4. Return in format:
-RESULT|score|highlight_start|highlight_end|text_segment
+Result_id:int
+Result_score:float
+Result_highlight_start:int
+Result_highlight_end:int
+Result_text_segment:str
+Result_id|Result_score|Result_highlight_start|Result_highlight_end|Result_text_segment
+Like below:
+1|5.0|0|110|Relevant text segment 1
+2|4.0|10|30|Relevant text segment 2
+3|3.0|30|40|Relevant text segment 3
+4|2.0|40|60|Relevant text segment 4
+5|1.0|50|70|Relevant text segment 5
+
 
 After all results, add a line:
 FINAL_ANSWER: [your comprehensive answer based on the most relevant results]

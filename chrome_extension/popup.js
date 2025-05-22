@@ -94,11 +94,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(data.error || 'Search failed');
             }
 
-            // Display answer if available
-            if (data.answer) {
-                answerDiv.textContent = data.answer;
-                answerDiv.style.display = 'block';
+            // Display answer if available (prefer final_answer, then answer)
+            let displayAnswer = data.final_answer || data.answer;
+            if (!displayAnswer && data.search_results && data.search_results.final_answer) {
+                displayAnswer = data.search_results.final_answer;
             }
+            // Always show the answer box if an answer is available
+            answerDiv.style.display = displayAnswer ? 'block' : 'none';
+            answerDiv.textContent = displayAnswer || '';
 
             // Display only the most relevant search result if available
             if (data.search_results && data.search_results.results && data.search_results.results.length > 0) {

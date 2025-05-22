@@ -363,6 +363,29 @@ async def process_query(query: str, session: ClientSession, tools_obj) -> dict:
                 result = await execute_tool(session, tools, plan)
                 log("tool", f"{result.tool_name} returned: {result.result}")
 
+                # If the tool is a math tool, immediately return the result as the final answer
+                math_tools = [
+                    "add", "subtract", "multiply", "divide", "log", "sqrt", "cbrt", "factorial",
+                    "sin", "cos", "tan", "mine", "power", "fibonacci_numbers", "remainder"
+                ]
+                if result.tool_name in math_tools:
+                    answer_str = result.result
+                    # If the result is a list with a single JSON string, extract the value
+                    if (
+                        isinstance(answer_str, list) and len(answer_str) == 1 and
+                        isinstance(answer_str[0], str) and answer_str[0].strip().startswith('{')
+                    ):
+                        import json
+                        try:
+                            parsed = json.loads(answer_str[0])
+                            if 'result' in parsed:
+                                answer_str = parsed['result']
+                        except Exception:
+                            pass
+                    final_answer = f"Result: {answer_str}"
+                    context_found = True
+                    break
+
                 # Add to memory with proper fields
                 memory_item = MemoryItem(
                     text=str(result.result),
@@ -394,6 +417,7 @@ async def process_query(query: str, session: ClientSession, tools_obj) -> dict:
         return {
             "success": True,
             "answer": final_answer,
+            "final_answer": final_answer,
             "search_results": search_results.model_dump() if 'search_results' in locals() else None
         }
 
