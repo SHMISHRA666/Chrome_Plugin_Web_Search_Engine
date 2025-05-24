@@ -10,6 +10,10 @@ A Chrome extension that builds a semantic search index of your browsing history 
 - Highlights matching text when viewing search results
 - Beautiful and intuitive user interface
 
+## Demo
+
+Watch a demo of the extension in action: [Web Search Engine Chrome Extension Demo](https://youtu.be/XsN9dVeccTU)
+
 ## Setup
 
 1. Install Python dependencies:
@@ -25,7 +29,7 @@ GEMINI_API_KEY=your_gemini_api_key
 
 3. Start the backend server:
 ```bash
-python server.py
+python agent.py
 ```
 
 4. Load the Chrome extension:
@@ -51,6 +55,7 @@ The project follows a layered architecture:
 - **Decision Layer**: Processes search queries and ranks results
 - **Action Layer**: Handles Chrome extension actions
 - **Agent Layer**: Orchestrates the entire system
+- **MCP-SERVER**: Contains MCP tool for searching and processing URLS
 
 ## Development
 
@@ -58,7 +63,3 @@ The project follows a layered architecture:
 - Frontend: HTML/CSS/JavaScript
 - Search: FAISS + Nomic embeddings
 - LLM: Gemini Flash 2.0
-
-## License
-
-MIT License
